@@ -1,0 +1,410 @@
+﻿syntax = "proto3";
+
+package TanukiGameRecordServer;
+
+// サーバーにより提供される棋譜サービス
+service GameRecordService {
+  // 棋譜の新規登録・更新を行う
+  rpc UpsertGameRecord(UpsertGameRecordRequest) returns (UpsertGameRecordResponse) {}
+
+  // 棋譜の一覧を取得する
+  // 検索条件を設定して複数の棋譜を返すことができる
+  // GetGameRecordと違い、サーバー側で終了メソッドが呼ばれる点に注意する
+  rpc ListGameRecord(SearchGameRecordRequest) returns (stream SearchGameRecordResponse) {}
+
+  // 棋譜を取得する
+  // 棋譜が更新される度に更新された棋譜が返る
+  // ListGameRecordと違い、サーバー側で送信の終了メソッドが呼ばれない点に注意する
+  rpc GetGameRecord(GetGameRecordRequest) returns (stream GetGameRecordResponse) {}
+}
+
+// UpsertGameRecordの引数
+message UpsertGameRecordRequest {
+  // [必須]
+  GameRecord game_record = 1;
+}
+
+// UpsertGameRecordの引数
+message UpsertGameRecordResponse {
+  // [必須]
+  GameRecord game_record = 1;
+}
+
+// SearchGameRecordの引数
+message SearchGameRecordRequest {
+  // [必須]
+  SearchQuery search_query = 1;
+}
+
+// SearchGameRecordの引数
+message SearchGameRecordResponse {
+  // [必須]
+  GameRecord game_record = 1;
+}
+
+// GetGameRecordの引数
+message GetGameRecordRequest {
+  // [必須]
+  GameRecordId game_record_id = 1;
+}
+
+// GetGameRecordの引数
+message GetGameRecordResponse {
+  // [必須]
+  GameRecord game_record = 1;
+}
+
+// 棋譜検索クエリ
+message SearchQuery {
+  // 検索クエリの条件項の積集合の和集合
+  //
+  // 各SearchTermsの条件にマッチする棋譜の和集合にマッチする
+  SearchTerms search_terms = 1;
+}
+
+// 検索クエリの条件項の積集合
+message SearchTerms {
+  // 検索クエリの積集合
+  //
+  // SearchTerm全ての条件に該当する棋譜にマッチする
+  SearchTerm search_term = 1;
+}
+
+message SearchTerm {
+  enum Type {
+    UnknownSearchTermType = 0;
+
+    // 先手、下手の対局者名 (完全一致)
+	//
+	// string_valueを使用する
+    BlackPerfectMatching = 1;
+
+    // 先手、下手の対局者名 (前方一致)
+	//
+	// string_valueを使用する
+	BlackForwardMatching = 2;
+
+    // 先手、下手の対局者名 (指定した文字列を含む)
+	//
+	// string_valueを使用する
+	BlackIncluding = 3;
+
+    // 先手、下手の対局者名 (後方一致)
+	//
+	// string_valueを使用する
+	BlackBackwardMatching = 4;
+
+    // 後手、上手の対局者名 (完全一致)
+	//
+	// string_valueを使用する
+    WhitePerfectMatching = 5;
+
+    // 後手、上手の対局者名 (前方一致)
+	//
+	// string_valueを使用する
+	WhiteForwardMatching = 6;
+
+    // 後手、上手の対局者名 (指定した文字列を含む)
+	//
+	// string_valueを使用する
+	WhiteIncluding = 7;
+
+    // 後手、上手の対局者名 (後方一致)
+	//
+	// string_valueを使用する
+	WhiteBackwardMatching = 8;
+
+    // 棋戦名 (完全一致)
+	//
+	// string_valueを使用する
+    EventPerfectMatching = 9;
+
+    // 棋戦名 (前方一致)
+	//
+	// string_valueを使用する
+	EventForwardMatching = 10;
+
+    // 棋戦名 (指定した文字列を含む)
+	//
+	// string_valueを使用する
+	EventIncluding = 11;
+
+    // 棋戦名 (後方一致)
+	//
+	// string_valueを使用する
+	EventBackwardMatching = 12;
+
+    // 対局場所 (完全一致)
+	//
+	// string_valueを使用する
+    SitePerfectMatching = 13;
+
+    // 対局場所 (前方一致)
+	//
+	// string_valueを使用する
+	SiteForwardMatching = 14;
+
+    // 対局場所 (指定した文字列を含む)
+	//
+	// string_valueを使用する
+	SiteIncluding = 15;
+
+    // 対局場所 (後方一致)
+	//
+	// string_valueを使用する
+	SiteBackwardMatching = 16;
+
+	// 対局開始日時の下限 (この値を含む)
+	//
+	// int64_valueを使用する
+	StartTime100NanoFrom = 17;
+
+	// 対局開始日時の上限 (この値を含まない)
+	//
+	// int64_valueを使用する
+	StartTime100NanoTo = 18;
+
+	// 対局終了日時の下限 (この値を含む)
+	//
+	// int64_valueを使用する
+	EndTime100NanoFrom = 19;
+
+	// 対局終了日時の上限 (この値を含まない)
+	//
+	// int64_valueを使用する
+	EndTime100NanoTo = 20;
+
+	// 持ち時間の下限 (この値を含む)
+	//
+	// int32_valueを使用する
+	TimeLimitMinFrom = 21;
+
+	// 持ち時間の上限 (この値を含まない)
+	//
+	// int32_valueを使用する
+	TimeLimitMinTo = 22;
+
+	// 秒読みの下限 (この値を含む)
+	//
+	// int32_valueを使用する
+	TimeLimitByoyomiSecFrom = 23;
+
+	// 秒読みの上限 (この値を含まない)
+	//
+	// int32_valueを使用する
+	TimeLimitByoyomiSecTo = 24;
+
+	// フィッシャールールにおける追加秒数の下限 (この値を含む)
+	//
+	// int32_valueを使用する
+	TimeLimitIncrementalSecFrom = 25;
+
+	// フィッシャールールにおける追加秒数の上限 (この値を含まない)
+	//
+	// int32_valueを使用する
+	TimeLimitIncrementalSecTo = 26;
+
+    // 戦型 (完全一致)
+	//
+	// string_valueを使用する
+    OpeningPerfectMatching = 27;
+
+    // 戦型 (前方一致)
+	//
+	// string_valueを使用する
+	OpeningForwardMatching = 28;
+
+    // 戦型 (指定した文字列を含む)
+	//
+	// string_valueを使用する
+	OpeningIncluding = 29;
+
+    // 戦型 (後方一致)
+	//
+	// string_valueを使用する
+	OpeningBackwardMatching = 30;
+  }
+  Type type = 1;
+
+  // stringの値
+  string string_value = 2;
+
+  // int32の値
+  int32 int32_value = 3;
+
+  // int64の値
+  int64 int64_value = 4;
+
+  // 否定する場合はtrue
+  bool negate = 5;
+}
+
+// 棋譜ID
+message GameRecordId {
+  // [必須] 棋譜ID
+  int64 id = 1;
+}
+
+message GameRecord {
+  // 棋譜ID (サーバーから返る場合は必須)
+  //
+  // tanuki-game-record-server内での棋譜のID
+  GameRecordId id = 1;
+
+  // 先手、下手の対局者名
+  string black = 2;
+
+  // 後手、上手の対局者名
+  string white = 3;
+
+  // 棋戦名
+  string event = 4;
+
+  // 対局場所
+  string site = 5;
+
+  // 対局開始日時
+  //
+  // 0001年1月1日の午前12時00分00秒からの経過時間を100ナノ秒間隔の数で表す
+  int64 start_time_100nano = 6;
+
+  // 対局終了日時
+  //
+  // 0001年1月1日の午前12時00分00秒からの経過時間を100ナノ秒間隔の数で表す
+  int64 end_time_100nano = 7;
+
+  // 持ち時間
+  //
+  // 分で表す
+  // 秒読み分やフィッシャールールにおける追加秒数分は含まない 
+  int32 time_limit_min = 8;
+
+  // 秒読み
+  //
+  // 秒で表す
+  int32 time_limit_byoyomi_sec = 9;
+
+  // フィッシャールールにおける追加秒数
+  //
+  // 秒で表す
+  int32 time_limit_incremental_sec = 10;
+
+  // 戦型
+  string opening = 11;
+
+  // 初期局面
+  //
+  // 空の場合は平手の局面を表す
+  repeated Piece initial_board = 12;
+
+  // 初期局面からの指し手
+  repeated Move move = 13;
+}
+
+// 指し手
+message Move {
+  // [必須] 移動元の升または駒台
+  Square from = 1;
+  
+  // [必須] 移動先の升または駒台
+  Square to = 2;
+
+  // [必須] 駒の種類
+  PieceType piece_type = 3;
+
+  // [必須] どちらの対局者の指し手か？
+  //
+  // 一方の対局者が連続で2手指す非合法手を表現するために使う
+  Color color = 4;
+}
+
+// 升または駒台
+message Square {
+  enum Type {
+    UnknownSquareType = 0;
+	OnBoard = 1;
+	PieceStand = 2;
+  }
+
+  // [必須] 升または駒台
+  Type type = 1;
+
+  // 筋 (typeがOnBoardの場合は必須)
+  //
+  // 一番右の1筋を1とする
+  int32 file = 2;
+
+  // 段 (typeがOnBoardの場合は必須)
+  //
+  // 一番上の一段を1とする
+  int32 rank = 3;
+}
+
+enum PieceType {
+  UnknownPieceType = 0;
+
+  // 歩
+  Pawn = 1;
+
+  // 香
+  Lance = 2;
+
+  // 桂
+  Knight = 3;
+
+  // 銀
+  Silver = 4;
+
+  // 角
+  Bishop = 5;
+
+  // 飛
+  Rook = 6;
+
+  // 金
+  Gold = 7;
+
+  // 玉
+  King = 8;
+
+  // と
+  PromotedPawn = 9;
+
+  // 成香
+  PromotedLance = 10;
+  
+  // 成桂
+  PromotedKnight = 11;
+
+  // 成銀
+  PromotedSilver = 12;
+
+  // 馬
+  PromotedBishop = 13;
+
+  // 龍
+  PromotedRook = 14;
+}
+
+// 対局者の先手・後手
+enum Color {
+  UnknownColor = 0;
+
+  // 先手
+  Black = 1;
+
+  // 後手
+  Whilte = 2;
+}
+
+// 初期盤面における駒を表す
+message Piece {
+  // [必須] 升または駒
+  Square square = 1;
+
+  // [必須] 駒の種類
+  PieceType piece_type = 2;
+
+  // [必須] 先手・後手どちらの駒か？
+  Color color = 3;
+}
